@@ -1,4 +1,4 @@
-# Vision-Controlled Bionic Hand (视觉控制仿生机械手)
+# Vision-Controlled Bionic Hand
 
 [![Python CI](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/actions/workflows/python_ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/actions/workflows/python_ci.yml)
 
