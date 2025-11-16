@@ -1,0 +1,30 @@
+!SESSION 2025-11-16 04:39:51.775 -----------------------------------------------
+eclipse.buildId=Version 1.18.1
+java.version=21.0.3
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=zh_CN
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 4 4 2025-11-16 04:40:22.888
+!MESSAGE CubeMX plugin appears to be active, Log4j initialization might be too late.
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2025-11-16 04:40:22.890
+!MESSAGE Log4j2 initialized with config file E:\vision-controlled-bionic-hand\stm32-control\bionic_hand_driver\.metadata\.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2025-11-16 04:40:30.871
+!MESSAGE Started RMI Server, listening on port 41337
+!SESSION 2025-11-16 04:44:46.286 -----------------------------------------------
+eclipse.buildId=Version 1.18.1
+java.version=21.0.3
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=zh_CN
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 4 4 2025-11-16 04:45:11.800
+!MESSAGE CubeMX plugin appears to be active, Log4j initialization might be too late.
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2025-11-16 04:45:11.801
+!MESSAGE Log4j2 initialized with config file E:\vision-controlled-bionic-hand\stm32-control\bionic_hand_driver\.metadata\.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2025-11-16 04:45:19.603
+!MESSAGE Started RMI Server, listening on port 41337

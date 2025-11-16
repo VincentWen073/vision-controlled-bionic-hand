@@ -1,0 +1,53 @@
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+develop-eggs/
+eggs/
+sdist/
+wheels/
+*.manifest
+*.spec
+
+# IDE configuration files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# STM32CubeIDE / Eclipse build artifacts
+# This assumes your STM32 project is inside the 'firmware/' directory.
+# The '*' is a wildcard to match any project name inside 'firmware/'.
+firmware/*/Debug/
+firmware/*/Release/
+firmware/*/build/
+firmware/*/.settings/
+
+# Common C/C++ build outputs that might not be in Debug/Release
+*.elf
+*.bin
+*.hex
+*.map
+*.o
+*.d
+
+# Operating System generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
