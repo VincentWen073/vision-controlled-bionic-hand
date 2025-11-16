@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -46,11 +47,34 @@ TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart1;
 
+/* Definitions for uartReceiveTask */
+osThreadId_t uartReceiveTaskHandle;
+const osThreadAttr_t uartReceiveTask_attributes = {
+  .name = "uartReceiveTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for servoControlTas */
+osThreadId_t servoControlTasHandle;
+const osThreadAttr_t servoControlTas_attributes = {
+  .name = "servoControlTas",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityHigh,
+};
+/* Definitions for servoAnglesQueue */
+osMessageQueueId_t servoAnglesQueueHandle;
+const osMessageQueueAttr_t servoAnglesQueue_attributes = {
+  .name = "servoAnglesQueue"
+};
+/* Definitions for uartRxSemaphore */
+osSemaphoreId_t uartRxSemaphoreHandle;
+const osSemaphoreAttr_t uartRxSemaphore_attributes = {
+  .name = "uartRxSemaphore"
+};
 /* USER CODE BEGIN PV */
 volatile uint8_t motor_enabled = 0;
 uint8_t received_byte;
 uint8_t rx_buffer[RX_BUFFER_SIZE];
-volatile uint16_t rx_index = 0;
 volatile uint8_t data_ready = 0;
 /* USER CODE END PV */
 
@@ -60,8 +84,11 @@ static void MX_GPIO_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_USART1_UART_Init(void);
-/* USER CODE BEGIN PFP */
+void StartUartReceiveTask(void *argument);
+void StartServoControlTask(void *argument);
 
+/* USER CODE BEGIN PFP */
+int map_angle_to_pulse(int angle);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -119,6 +146,53 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
   /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* Create the semaphores(s) */
+  /* creation of uartRxSemaphore */
+  uartRxSemaphoreHandle = osSemaphoreNew(1, 1, &uartRxSemaphore_attributes);
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* Create the queue(s) */
+  /* creation of servoAnglesQueue */
+  servoAnglesQueueHandle = osMessageQueueNew (1, sizeof(ServoAngles_t), &servoAnglesQueue_attributes);
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* creation of uartReceiveTask */
+  uartReceiveTaskHandle = osThreadNew(StartUartReceiveTask, NULL, &uartReceiveTask_attributes);
+
+  /* creation of servoControlTas */
+  servoControlTasHandle = osThreadNew(StartServoControlTask, NULL, &servoControlTas_attributes);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* USER CODE BEGIN RTOS_EVENTS */
+  /* add events, ... */
+  /* USER CODE END RTOS_EVENTS */
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -413,7 +487,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -436,11 +510,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     if (huart->Instance == USART1)
     {
     	static uint8_t is_receiving = 0;
+    	static uint16_t rx_idx = 0;
 
 		if (received_byte == '<' && is_receiving == 0)
 		{
 
-			rx_index = 0;
+			rx_idx = 0;
 			is_receiving = 1;
 		}
 		else if (is_receiving == 1)
@@ -449,18 +524,19 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			{
 				is_receiving = 0;
 				data_ready = 1;
-				rx_buffer[rx_index] = '\0';
+				rx_buffer[rx_idx] = '\0';
+
+				osSemaphoreRelease(uartRxSemaphoreHandle);
 			}
 			else
 			{
-				if (rx_index < RX_BUFFER_SIZE - 1)
+				if (rx_idx < RX_BUFFER_SIZE - 1)
 				{
-					rx_buffer[rx_index++] = received_byte;
+					rx_buffer[rx_idx++] = received_byte;
 				}
 				else
 				{
 					is_receiving = 0;
-					rx_index = 0;
 				}
 			}
 		}
@@ -468,6 +544,102 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     }
 }
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartUartReceiveTask */
+/**
+  * @brief  Function implementing the uartReceiveTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartUartReceiveTask */
+void StartUartReceiveTask(void *argument)
+{
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+	  ServoAngles_t servo_cmd;
+
+	  for(;;)
+	  {
+	    if (osSemaphoreAcquire(uartRxSemaphoreHandle, osWaitForever) == osOK)
+	    {
+	        int checksum_received;
+
+	        int parse_count = sscanf((char*)rx_buffer, "%d,%d,%d,%d,%d,%d,%d",
+	                                 &servo_cmd.angles[0], &servo_cmd.angles[1], &servo_cmd.angles[2],
+	                                 &servo_cmd.angles[3], &servo_cmd.angles[4], &servo_cmd.angles[5],
+	                                 &checksum_received);
+
+	        if (parse_count == 7) {
+	            int checksum_calculated = 0;
+	            for (int i = 0; i < 6; i++) {
+	                checksum_calculated ^= servo_cmd.angles[i];
+	            }
+
+	            if (checksum_calculated == checksum_received) {
+	                osMessageQueuePut(servoAnglesQueueHandle, &servo_cmd, 0U, 0U);
+	            } else {
+	                printf("Error: Checksum mismatch!\n");
+	            }
+	        } else {
+	            printf("Error: Format mismatch! Parsed %d values.\n", parse_count);
+	        }
+	    }
+	  }
+  /* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_StartServoControlTask */
+/**
+* @brief Function implementing the servoControlTas thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartServoControlTask */
+void StartServoControlTask(void *argument)
+{
+  /* USER CODE BEGIN StartServoControlTask */
+  /* Infinite loop */
+  ServoAngles_t received_cmd;
+  for(;;)
+  {
+	  if (osMessageQueueGet(servoAnglesQueueHandle, &received_cmd, NULL, osWaitForever) == osOK)
+	      {
+	          __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, map_angle_to_pulse(received_cmd.angles[0]));
+	          __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, map_angle_to_pulse(received_cmd.angles[1]));
+	          __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, map_angle_to_pulse(received_cmd.angles[2]));
+	          __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, map_angle_to_pulse(received_cmd.angles[3]));
+	          __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, map_angle_to_pulse(received_cmd.angles[4]));
+	          __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, map_angle_to_pulse(received_cmd.angles[5]));
+
+	          printf("Servos updated to: %d,%d,%d,%d,%d,%d\n", received_cmd.angles[0],
+	                 received_cmd.angles[1], received_cmd.angles[2], received_cmd.angles[3],
+	                 received_cmd.angles[4], received_cmd.angles[5]);
+	      }
+  }
+  /* USER CODE END StartServoControlTask */
+}
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM1)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

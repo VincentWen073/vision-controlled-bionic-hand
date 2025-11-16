@@ -15,12 +15,13 @@ An open-source project that uses real-time hand tracking to control a bionic han
 
 ## Features
 
-- **👋 Real-time Hand Tracking**: High-performance hand landmark detection using Google's MediaPipe on Raspberry Pi.
-- **🤖 State Machine Control**: A robust state machine (IDLE, RUNNING, WAITING) manages the application logic for reliability.
-- **⚙️ Dynamic Pose Calibration**: Automatically sets the initial hand pose as the "zero point" for intuitive relative control of the wrist.
-- **🌊 Smooth Servo Motion**: Implements an EMA (Exponential Moving Average) filter to smooth servo angle commands, resulting in fluid movements.
-- **📡 Reliable Serial Protocol**: A custom serial protocol with a checksum ensures data integrity between the Raspberry Pi and the microcontroller.
-- **🐍 Python-based**: The entire high-level logic is written in Python, making it easy to read and extend.
+- **Real-time Hand Tracking**: High-performance hand landmark detection using Google's MediaPipe on Raspberry Pi.
+- **State Machine Control**: A robust state machine (IDLE, RUNNING, WAITING) manages the application logic for reliability.
+- **Dynamic Pose Calibration**: Automatically sets the initial hand pose as the "zero point" for intuitive relative control of the wrist.
+- **Smooth Servo Motion**: Implements an EMA (Exponential Moving Average) filter to smooth servo angle commands, resulting in fluid movements.
+- **Real-Time Embedded System**: Firmware built on FreeRTOS, featuring a multi-tasking architecture for robust, scalable, and real-time control.
+- **Reliable Serial Protocol**: A custom serial protocol with a checksum ensures data integrity between the Raspberry Pi and the microcontroller.
+- **Python-based**: The entire high-level logic is written in Python, making it easy to read and extend.
 
 ---
 
@@ -37,9 +38,10 @@ An open-source project that uses real-time hand tracking to control a bionic han
 - **Microcontroller**: STM32 NUCLEO F446RE (acts as a bridge between Pi and servo driver)
 
 ### Software
-- **OS**: Raspberry Pi OS (64-bit recommended for MediaPipe)
+- **OS**: Raspberry Pi OS (64-bit recommended for MediaPipe), FreeRTOS (on STM32)
 - **Core Frameworks**:
   - **Python 3.9+**
+  - **C/C++** (for STM32 Firmware)
   - **OpenCV** for video processing.
   - **MediaPipe** for hand landmark detection.
   - **Picamera2** for modern camera interfacing on Raspberry Pi.
@@ -70,6 +72,33 @@ An open-source project that uses real-time hand tracking to control a bionic han
 ├── requirements.txt          # Python dependencies
 └── README.md                 # This file
 ```
+
+---
+
+## Software Architecture
+
+The project's software is split into two main components: a high-level application running on the Raspberry Pi, and a real-time firmware on the STM32 microcontroller.
+
+### High-Level Control (Raspberry Pi)
+
+The main Python application's logic is managed by a robust finite state machine (FSM) to ensure predictable and reliable operation. The state transitions are triggered by user input and hand detection events.
+
+**State Machine Diagram (UML):**
+
+![State Machine Diagram](docs/FSM-UML.png)
+
+- **IDLE**: The initial state. The system is waiting for user command and performs no hand tracking.
+- **RUNNING**: The active state. The application continuously processes camera frames, calculates servo angles, and sends them to the STM32.
+- **WAITING**: A transitional state entered when a hand is lost. If the hand is not re-detected within a timeout, the system resets the robotic hand's pose.
+
+### Real-Time Firmware (STM32)
+
+The embedded firmware is built upon the **FreeRTOS** real-time operating system to handle time-critical tasks reliably.
+
+- **Multi-Tasking Design**: The firmware is architected with two primary tasks:
+    1.  A **`uartReceiveTask`** for handling incoming serial data asynchronously.
+    2.  A **`servoControlTask`** for updating all 6 servo PWM signals in real-time.
+- **Thread-Safe Communication**: A **Message Queue** is used to safely pass angle commands from the receiving task to the control task, preventing data corruption and ensuring smooth motion.
 
 ---
 

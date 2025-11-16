@@ -55,7 +55,9 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+typedef struct {
+    int angles[6];
+} ServoAngles_t;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
