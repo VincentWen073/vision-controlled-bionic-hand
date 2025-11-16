@@ -1,6 +1,6 @@
 # Vision-Controlled Bionic Hand
 
-[![Python CI](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/actions/workflows/python_ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/actions/workflows/python_ci.yml)
+[![Python CI](https://github.com/VincentWen073/vision-controlled-bionic-hand/actions/workflows/python_ci.yml/badge.svg)](https://github.com/VincentWen073/vision-controlled-bionic-hand/actions/workflows/python_ci.yml)
 
 An open-source project that uses real-time hand tracking to control a bionic hand. This project is built with Python on a Raspberry Pi, utilizing MediaPipe for gesture recognition and serial communication for hardware control.
 
