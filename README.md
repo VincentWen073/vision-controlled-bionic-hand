@@ -34,7 +34,7 @@ An open-source project that uses real-time hand tracking to control a bionic han
 - **Robotic Hand Assembly**: 6-DOF Robotic Arm Kit with:
   - 5x LFD-01 Servos (Fingers)
   - 1x LD-1501MG Servo (Wrist Rotation)
-- **Servo Driver**: 8-Channel Servo Controller Board (e.g., PCA9685-based)
+- **Servo Driver**: 8-Channel Servo Controller Board
 - **Microcontroller**: STM32 NUCLEO F446RE (acts as a bridge between Pi and servo driver)
 
 ### Software
